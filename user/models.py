@@ -47,7 +47,7 @@ class User(AbstractBaseUser):
     time_zone = models.CharField(max_length=200,blank=True,null=True)
     photo = models.ImageField(upload_to="user_photo")
     notification = models.BooleanField(default=True,blank=True,null=True)
-
+    position = models.CharField(max_length=200,blank=True,null=True)
     objects = UserManager()
 
     USERNAME_FIELD = "email"

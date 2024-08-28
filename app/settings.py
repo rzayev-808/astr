@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-
+import datetime
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +41,10 @@ INSTALLED_APPS = [
     'user',
     'rest_framework',
     'rest_framework_simplejwt',
+    'cluster',
+    'squads',
+    'space',
+    'pricing'
 ]
 AUTH_USER_MODEL = "user.User"
 
@@ -106,9 +110,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'app.jwt.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    
+}   
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=15),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=15),
 }
 
 # Internationalization

@@ -3,10 +3,13 @@ from .models import Space
 from cluster.serializers import ClusterSerializers
 from squads.serializers import SquadSerializers
 from pricing.serializers import PricingSerializers
+from invite.models import *
 
 class InviteSerializers(serializers.Serializer):
-    email = serializers.EmailField()
-    role = serializers.IntegerField()
+    
+    class Meta:
+        model = Invite
+        fields = '__all__'
 
 
 

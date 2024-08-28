@@ -23,7 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("auth/",include("user.urls")),
     path("space/",include("space.urls")),
-    path("cluster/",include("cluster.urls"))
+    path("cluster/",include("cluster.urls")),
+    path("invite/",include("invite.urls"))
 ]
 if settings.DEBUG:
     urlpatterns = urlpatterns + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

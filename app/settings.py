@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'cluster',
     'squads',
     'space',
-    'pricing'
+    'pricing',
+    'invite'
 ]
 AUTH_USER_MODEL = "user.User"
 

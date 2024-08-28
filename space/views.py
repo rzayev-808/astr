@@ -31,6 +31,7 @@ class SendInvite(APIView):
     def post(self, request, format=None):
         serializers = InviteSerializers(data=request.data)
         if serializers.is_valid():
+            item = serializers.save()
             print(serializers.data["email"])
             return Response({"success":"Invite send to user"})
         

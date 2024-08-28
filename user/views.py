@@ -8,6 +8,7 @@ from rest_framework import status
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .models import PasswordReset
 import os
+from rest_framework import mixins
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -74,3 +75,22 @@ class ResetPassword(generics.GenericAPIView):
             return Response({'success':'Password updated'})
         else: 
             return Response({'error':'No user found'}, status=404)
+        
+
+
+class GetUserVirews(mixins.ListModelMixin, mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.RetrieveModelMixin,generics.GenericAPIView):
+
+    serializer_class = UserGetAndDetailSerializers
+    
+    def get_queryset(self):
+        return User.objects.filter(id=self.request.user.id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+    
+
+class DetailAndUpdateUser(generics.RetrieveUpdateAPIView):
+    serializer_class = UserGetAndDetailSerializers
+    def get_queryset(self):
+        return User.objects.filter(id=self.request.user.id)
+

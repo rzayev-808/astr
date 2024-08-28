@@ -42,6 +42,11 @@ class User(AbstractBaseUser):
     fullname = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    username = models.CharField(max_length=200,blank=True,null=True)
+    language = models.CharField(max_length=200,blank=True,null=True)
+    time_zone = models.CharField(max_length=200,blank=True,null=True)
+    photo = models.ImageField(upload_to="user_photo")
+    notification = models.BooleanField(default=True,blank=True,null=True)
 
     objects = UserManager()
 

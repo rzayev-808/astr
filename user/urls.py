@@ -30,5 +30,7 @@ urlpatterns = [
     path('api/swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('api/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path("api/reset_password/request/",RequestPasswordReset.as_view(),name='reset_passwrod_request'),
-    path("api/reset_password/<token>/",ResetPassword.as_view(),name="reset_password")
+    path("api/reset_password/<token>/",ResetPassword.as_view(),name="reset_password"),
+    path('api/user/', GetUserVirews.as_view(), name='get_user'),
+    path('api/user/<int:pk>/', DetailAndUpdateUser.as_view(),name="detail_or_update_user")
 ]

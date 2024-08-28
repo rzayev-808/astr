@@ -14,7 +14,7 @@ class ClusterMembersSerializers(serializers.ModelSerializer):
     def get_members(self, obj):
         
         res = Space.objects.filter(cluster_space__id__in=[obj.id])
-        members = [[{"fullname":q.fullname,"id":q.id,"position":q.position} for q in x.members.all()] for x in res]
+        members = [[{"fullname":q.fullname,"id":q.id,"role":q.position} for q in x.members.all()] for x in res]
         return members
     
     class Meta:

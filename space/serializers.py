@@ -4,6 +4,9 @@ from cluster.serializers import ClusterSerializers
 from squads.serializers import SquadSerializers
 from pricing.serializers import PricingSerializers
 from invite.models import *
+from user.serializers import UserGetAndDetailSerializers
+
+
 
 class InviteSerializers(serializers.Serializer):
     
@@ -18,6 +21,8 @@ class SpaceSerializers(serializers.ModelSerializer):
     cluster_space = ClusterSerializers(many=True)
     squad_space = SquadSerializers(many=True)
     pricing_plans = PricingSerializers()
+    members = UserGetAndDetailSerializers(many=True)
+
 
     class Meta:
         model = Space

@@ -14,17 +14,11 @@ class TaskViews(APIView):
         squad_id = request.GET["squad_id"]
         status = request.GET.get("status")
         if squad_id:
-            tasks.filter(squad_id=squad_id)
+            data = tasks.filter(squad_id=squad_id)
+
         if status:
-            tasks.filter(status=status)
-        serializer = TaskSerializers(tasks, many=True)
+            data = tasks.filter(status=status)
+        serializer = TaskSerializers(data, many=True)
         return Response(serializer.data)
-    # def get_serializer(self, *args, **kwargs):
-    #     return TaskSerializers(*args, **kwargs)
-    
-    # def post(self, request, format=None):
-    #     serializers = TaskSerializers(data=request.data)
-    #     if serializers.is_valid():
-    #         item = serializers.save()
-    #         print(serializers.data["email"])
-    #         return Response({"success":"Invite send to user"})
+   
+   

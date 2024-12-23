@@ -53,15 +53,25 @@ class Task(models.Model):
     status = models.CharField(max_length=100,choices=STATIS_CHOICES,default=[0][0])
 
 
+    def __str__(self):
+        return "{}-{}".format(self.squad.name,self.status)
+
+
 
 
 class FileTaks(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE,related_name="files")
     file = models.FileField()
+
+    def __str__(self):
+        return str(self.task)
 
 
 class Comment(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE,related_name="comments")
     comment = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
-
+    
+    def __str__(self):
+        return str(self.task)

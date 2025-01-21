@@ -3,5 +3,5 @@ from .views import *
 from rest_framework import permissions
 
 urlpatterns = [
-    path('api/', TaskViews.as_view(), name='task_get'),
+    path('api/', TaskViewset.as_view({'get': 'list'}), name='task_get'),
 ]

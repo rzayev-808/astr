@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'space',
     'pricing',
     'invite',
-    'task'
+    'task',
+    'django_filters',
 ]
 AUTH_USER_MODEL = "user.User"
 
@@ -120,6 +121,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
     
 }   
 

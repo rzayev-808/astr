@@ -51,6 +51,7 @@ class Task(models.Model):
     story_point = models.CharField(max_length=200)
     members = models.ManyToManyField(User,blank=True,related_name="task_member")
     status = models.CharField(max_length=100,choices=STATIS_CHOICES,default=[0][0])
+    importance = models.CharField(max_length=200,blank=True,null=True)
 
 
     def __str__(self):
@@ -72,6 +73,6 @@ class Comment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE,related_name="comments")
     comment = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return str(self.task)

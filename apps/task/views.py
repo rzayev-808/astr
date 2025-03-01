@@ -41,8 +41,14 @@ class TaskFilter(filters.FilterSet):
 class TaskViewset(viewsets.ModelViewSet):  
     serializer_class = TaskSerializers
     queryset = Task.objects.all()
-    
     filter_backends = [DjangoFilterBackend,]
     filterset_fields = ["squad_id","status","members__fullname"]
     filterset_class = TaskFilter
+   
+   
+   
+class TaskCreateViewset(viewsets.ModelViewSet):  
+    serializer_class = TaskCreateSerializers
+    queryset = Task.objects.all()
+  
    

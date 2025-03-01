@@ -52,3 +52,18 @@ class TaskSerializers(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+        
+        
+class TaskCreateSerializers(serializers.ModelSerializer):
+    # project = ProjectSerializers()
+    # dod = DodSerializers(many=True)
+    # topics = TopicsSerializers(many=True)
+    # subtasks = SubtaskSerializers(many=True)
+    # members = MembersSerializers(many=True)
+    # files = FileTaksSerizlisers(many=True)
+    # comments = CommentsSerizlisers(many=True)
+
+
+    class Meta:
+        model = Task
+        fields = '__all__'

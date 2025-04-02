@@ -7,7 +7,7 @@ router.register(r'create', TaskCreateViewset, basename='create')
 
 urlpatterns = [
     path('api/', TaskViewset.as_view({'get': 'list'}), name='task_get'),
-    path('api/<pk>/', TaskViewset.as_view({'get': 'retrieve'}), name='task_detail'),
+    path('api/<pk>/', TaskViewset.as_view({'get': 'retrieve','delete': 'destroy'}), name='task_detail'),
     path('mytask/',MyTaskViewset.as_view({'get': 'list'}),name='mytask'),
     # path('', include(router.urls)),
     path("api/create/",TaskCreateViewset.as_view({
@@ -18,6 +18,23 @@ urlpatterns = [
     'put': 'update',
     'patch': 'partial_update',
     'delete': 'destroy'
-    }),name="update")
+    }),name="update"),
+    path("api/subtask/",SubTaskCreateViewset.as_view({
+        'post': 'create',
+    })),
+     path("api/subtask/<pk>/",SubTaskCreateViewset.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'patch': 'partial_update',
+        'delete': 'destroy'
+    })),
+     
+    path("api/add/comment/",AddCommentViewset.as_view({
+        'post': 'create',
+    })),
+   
+    path("api/add/file/",CreateFileViewset.as_view({
+        'post': 'create',
+    }))
    
 ]

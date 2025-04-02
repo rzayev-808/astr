@@ -1,6 +1,10 @@
 from django.db import models
 from user.models import User
 from squads.models import Squad
+from simple_history.models import HistoricalRecords
+
+
+
 
 STATIS_CHOICES = [
     ("Backlog", "Backlog"),
@@ -53,8 +57,16 @@ class Task(models.Model):
     members = models.ManyToManyField(User,blank=True,related_name="task_member")
     status = models.CharField(max_length=100,choices=STATIS_CHOICES,default=[0][0])
     importance = models.CharField(max_length=200,blank=True,null=True)
+    history = HistoricalRecords(user_model=User)
 
+    @property
+    def _history_user(self):
+        return self.changed_by
 
+    @_history_user.setter
+    def _history_user(self, value):
+        self.changed_by = value
+        
     def __str__(self):
         return "{}-{}".format(self.squad.name,self.status)
 

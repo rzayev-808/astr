@@ -11,6 +11,7 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from django_filters import rest_framework as filters
+from simple_history.models import HistoricalRecords
 
 # class TaskViews(APIView):
 #     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
@@ -61,3 +62,19 @@ class TaskCreateViewset(viewsets.ModelViewSet):
     queryset = Task.objects.all()
   
    
+class SubTaskCreateViewset(viewsets.ModelViewSet):  
+    serializer_class = SubtaskSerializers
+    queryset = SubTasks.objects.all()
+    
+    
+class AddCommentViewset(viewsets.ModelViewSet):
+    serializer_class = CommentCreateSerializers
+    queryset = Comment.objects.all()
+    
+class HistoryViewset(viewsets.ModelViewSet):
+    serializer_class = TaskHistorySerializer
+    queryset = Task.history.all()
+    
+class CreateFileViewset(viewsets.ModelViewSet):
+    serializer_class = FileTaksSerializers
+    queryset = FileTaks.objects.all()

@@ -37,6 +37,7 @@ class SubTasks(models.Model):
         return self.name
 
 class Task(models.Model):
+    name = models.CharField(max_length=500,blank=True,null=True)
     squad = models.ForeignKey(Squad,on_delete=models.CASCADE)
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)

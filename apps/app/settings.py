@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'task',
     'django_filters',
     'simple_history',
+    'ticket'
 ]
 AUTH_USER_MODEL = "user.User"
 

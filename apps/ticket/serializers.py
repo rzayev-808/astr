@@ -10,14 +10,17 @@ class TicketViewSerializers(serializers.ModelSerializer):
     squad = SquadSerializers(many=True)
     task = TaskSerializers(many=True)
     class Meta:
+        model = Ticket
         fields = '__all__'
     
     
 class AnswerSerializers(serializers.ModelSerializer):
     class Meta:
+        model  = Answer
         fields = '__all__'
         
         
 class TicketCreateEditSerializers(serializers.ModelSerializer):
     class Meta:
+        model = Ticket
         fields = '__all__'

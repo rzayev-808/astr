@@ -29,7 +29,7 @@ class TicketCreateViewset(viewsets.ModelViewSet):
 
 
 class AnsweCreateViewset(viewsets.ModelViewSet):
-    serializer_class = TicketCreateEditSerializers
+    serializer_class = AnswerSerializers
     def get_queryset(self):
         return Answer.objects.all()
     

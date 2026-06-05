@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 import datetime
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,8 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +53,8 @@ INSTALLED_APPS = [
     'task',
     'django_filters',
     'simple_history',
-    'ticket'
+    'ticket',
+    'chat'
 ]
 AUTH_USER_MODEL = "user.User"
 
@@ -85,6 +89,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'app.wsgi.application'
+ASGI_APPLICATION = 'app.asgi.application'
+
+# Canlı chat (WebSocket) üçün channel layer — Redis.
+# Ünvanı REDIS_URL mühit dəyişəni ilə dəyişmək olar, məs:
+#   REDIS_URL=redis://:parol@127.0.0.1:6379/0
+REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    }
+}
 
 
 # Database

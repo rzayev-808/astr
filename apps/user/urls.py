@@ -11,9 +11,19 @@ from rest_framework_simplejwt.views import (
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="ASTR API",
+      title="Comestask API",
       default_version='v1',
-      description="Debug mode on",
+      description=(
+          "Comestask API.\n\n"
+          "## Canlı Chat — WebSocket\n"
+          "Mətn mesajları real-time WebSocket ilə gedir (Swagger yalnız REST-i göstərir):\n\n"
+          "- Direct: `ws://<host>/ws/chat/direct/<user_id>/?token=<access_token>`\n"
+          "- Squad: `ws://<host>/ws/chat/squad/<squad_id>/?token=<access_token>`\n\n"
+          "Mesaj göndərmək (JSON): `{\"text\": \"salam\"}`. "
+          "Gələn mesajlar həmin formatda serializasiya olunmuş obyekt kimi qayıdır.\n\n"
+          "**Fayl** mesajları isə `POST /chat/api/...` endpoint-ləri ilə "
+          "`multipart/form-data` formasında göndərilir və qoşulu olanlara WebSocket ilə canlı çatdırılır."
+      ),
       terms_of_service="",
       contact=openapi.Contact(email="rzayev592@gmail.com"),
       license=openapi.License(name="BSD License"),

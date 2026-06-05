@@ -27,7 +27,8 @@ urlpatterns = [
     path("invite/",include("invite.urls")),
     path("task/",include("task.urls")),
     path("squad/",include("squads.urls")),
-    path("ticket/",include("ticket.urls"))
+    path("ticket/",include("ticket.urls")),
+    path("chat/",include("chat.urls"))
 ]
 if settings.DEBUG:
     urlpatterns = urlpatterns + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

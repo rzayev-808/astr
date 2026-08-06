@@ -3,6 +3,8 @@ from .views import *
 from rest_framework import permissions
 
 urlpatterns = [
-    path('api/', SendInvite.as_view(), name='space_invite_send'),
+    path('api/', InviteView.as_view(), name='space_invite_send'),
+    path('api/<int:pk>/', InviteDetailView.as_view(), name='invite_detail_cancel'),
+    path('api/<int:pk>/accept/', AcceptInvite.as_view(), name='invite_accept'),
 
 ]

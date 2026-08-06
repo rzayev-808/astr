@@ -62,9 +62,14 @@ class TaskCreateViewset(viewsets.ModelViewSet):
     queryset = Task.objects.all()
   
    
-class SubTaskCreateViewset(viewsets.ModelViewSet):  
+class SubTaskCreateViewset(viewsets.ModelViewSet):
     serializer_class = SubtaskSerializers
     queryset = SubTasks.objects.all()
+
+
+class ProjectViewset(viewsets.ModelViewSet):
+    serializer_class = ProjectSerializers
+    queryset = Project.objects.all()
     
     
 class AddCommentViewset(viewsets.ModelViewSet):

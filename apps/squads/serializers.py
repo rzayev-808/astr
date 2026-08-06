@@ -8,3 +8,8 @@ class SquadSerializers(serializers.ModelSerializer):
         model = Squad
         exclude = ['space']
 
+
+class SquadCreateUpdateSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Squad
+        fields = '__all__'

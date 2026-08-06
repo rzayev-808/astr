@@ -3,16 +3,9 @@ from .models import Space
 from cluster.serializers import ClusterSerializers
 from squads.serializers import SquadSerializers
 from pricing.serializers import PricingSerializers
-from invite.models import *
+from pricing.models import Pricing
+from user.models import User
 from user.serializers import UserGetAndDetailSerializers
-
-
-
-class InviteSerializers(serializers.Serializer):
-    
-    class Meta:
-        model = Invite
-        fields = '__all__'
 
 
 
@@ -28,12 +21,28 @@ class SpaceSerializers(serializers.ModelSerializer):
         model = Space
         fields = '__all__'
 
-   
 
-class SpaceUpdateSerializers(serializers.ModelSerializer):
-
-    
+class SpaceCreateSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Space
         fields = '__all__'
+        read_only_fields = ['creater_user']
+        extra_kwargs = {'pricing_plans': {'required': False}}
+
+    def create(self, validated_data):
+        if not validated_data.get("pricing_plans"):
+            validated_data["pricing_plans"] = Pricing.objects.filter(name="Free").last()
+        return super().create(validated_data)
+
+
+class SpaceUpdateSerializers(serializers.ModelSerializer):
+
+    class Meta:
+        model = Space
+        fields = '__all__'
+        read_only_fields = ['creater_user']
+
+
+class SpaceMemberSerializers(serializers.Serializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())

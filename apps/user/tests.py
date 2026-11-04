@@ -186,9 +186,9 @@ class AutoAcceptInviteTests(TestCase):
         self.assertIn(guest, self.space.members.all())
         self.invite.refresh_from_db()
         self.assertTrue(self.invite.acceptance)
-        # üzv siyahısında görünür
+        # üzv siyahısında görünür (detal ünvanı üzvləri id siyahısı kimi qaytarır)
         detail = c.get(f"/space/api/{self.space.id}/").json()
-        self.assertIn(guest.id, [m["id"] for m in detail["members"]])
+        self.assertIn(guest.id, detail["members"])
 
     def test_profile_load_also_accepts(self):
         guest = User.objects.create(email="guest@test.az", fullname="Guest")

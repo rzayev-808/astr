@@ -211,7 +211,7 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 SITE_NAME = "Comestask"
 
 # Məktubdakı linklər front-end-ə aparır. Front-end-in real ünvanını bura yaz.
-FRONTEND_URL = "http://comestask.az"
+FRONTEND_URL = "https://comestask.az"
 # {token} → dəvətin gizli kodu. Front-end bu səhifədə əvvəl GET /invite/api/by-token/<token>/ ilə
 # məlumatı alır, sonra (login-dən/qeydiyyatdan sonra) POST /invite/api/by-token/<token>/accept/ çağırır
 INVITE_LINK = FRONTEND_URL + "/invite/{token}"

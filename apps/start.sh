@@ -6,4 +6,5 @@
 python manage.py migrate --noinput
 
 # PORT mühit dəyişəni ilə portu dəyişmək olar (default 80).
-daphne -b 0.0.0.0 -p "${PORT:-80}" app.asgi:application
+#daphe -b 0.0.0.0 -p "${PORT:-80}" app.asgi:application
+uvicorn app.asgi:application --host 0.0.0.0 --port "${PORT:-8000}"

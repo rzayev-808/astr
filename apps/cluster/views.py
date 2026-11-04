@@ -9,9 +9,12 @@ from rest_framework import status
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
+from app.access import accessible_clusters, can_access_space
 
 
 class ClusterViewset(viewsets.ModelViewSet):
+    """Cluster-i yalnız space-in yaradanı/üzvü görür; girişi olmayana 404."""
     permission_classes = [IsAuthenticated]
     queryset = Cluster.objects.all()
 
@@ -23,9 +26,17 @@ class ClusterViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Cluster.objects.none()
-        if getattr(self, 'action', None) == "retrieve":
-            return Cluster.objects.all()
-        user = self.request.user
-        return Cluster.objects.filter(
-            Q(space__creater_user=user) | Q(space__members=user)
-        ).distinct()
+        return accessible_clusters(self.request.user)
+
+    def _check_space(self, serializer):
+        space = serializer.validated_data.get("space")
+        if space is not None and not can_access_space(self.request.user, space):
+            raise PermissionDenied("You do not have access to this space")
+
+    def perform_create(self, serializer):
+        self._check_space(serializer)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._check_space(serializer)
+        serializer.save()

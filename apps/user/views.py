@@ -9,6 +9,12 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .models import PasswordReset
 from .emails import send_password_reset_email
 from rest_framework import mixins
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+class LoginView(TokenObtainPairView):
+    """POST /auth/api/login/ — JWT verir; eyni anda bu email-ə gələn dəvətləri qəbul edir."""
+    serializer_class = LoginSerializer
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()

@@ -34,3 +34,9 @@ class SpaceListVisibilityTests(TestCase):
         self.assertEqual(c.get(f"/space/api/{self.space.id}/").status_code, 200)
         self.assertEqual(c.patch(f"/space/api/{self.space.id}/", {"company": "X"}, format="json").status_code, 404)
         self.assertEqual(c.delete(f"/space/api/{self.space.id}/").status_code, 404)
+
+
+class SpaceAnonymousTests(TestCase):
+    def test_anonymous_is_rejected_everywhere(self):
+        for url in ("/space/api/", "/space/api/1/", "/auth/api/user/", "/task/api/project/"):
+            self.assertIn(APIClient().get(url).status_code, (401, 403), url)

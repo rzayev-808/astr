@@ -89,11 +89,16 @@ class RegisterWithInviteTests(TestCase):
                                             space=self.space, invited_by=self.owner)
         self.c = APIClient()
 
-    def test_register_without_token_still_works(self):
+    def test_register_without_token_auto_accepts_matching_invite(self):
         r = self.c.post(self.URL, self.BODY, format="json")
         self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()["space"], self.space.id)
+        self.assertIn(User.objects.get(email="guest@test.az"), self.space.members.all())
+
+    def test_register_without_any_invite_has_no_space(self):
+        r = self.c.post(self.URL, {**self.BODY, "email": "nobody@test.az"}, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
         self.assertIsNone(r.json()["space"])
-        self.assertTrue(User.objects.filter(email="guest@test.az").exists())
 
     def test_register_with_token_accepts_invite_and_returns_space(self):
         r = self.c.post(self.URL, {**self.BODY, "invite_token": self.invite.token}, format="json")
@@ -122,3 +127,50 @@ class RegisterWithInviteTests(TestCase):
         r = self.c.post(self.URL, {**self.BODY, "invite_token": self.invite.token}, format="json")
         self.assertEqual(r.status_code, 400)
         self.assertFalse(User.objects.filter(email="guest@test.az").exists())
+
+
+class AutoAcceptInviteTests(TestCase):
+    """Email-ə gələn gözləyən dəvətlər qeydiyyatda və login-də avtomatik qəbul olunur."""
+
+    def setUp(self):
+        from invite.models import Invite
+        from space.models import Space
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
+        self.space = Space.objects.filter(creater_user=self.owner).first()
+        self.invite = Invite.objects.create(email="Guest@Test.az", role="dev",
+                                            space=self.space, invited_by=self.owner)
+        self.c = APIClient()
+
+    def test_register_without_token_auto_accepts_matching_invites(self):
+        body = {"email": "guest@test.az", "fullname": "Guest",
+                "password": "StrongPass1!", "password2": "StrongPass1!"}
+        r = self.c.post("/auth/api/register/", body, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()["space"], self.space.id)
+        guest = User.objects.get(email="guest@test.az")
+        self.assertIn(guest, self.space.members.all())
+        self.invite.refresh_from_db()
+        self.assertTrue(self.invite.acceptance)
+
+    def test_login_auto_accepts_pending_invites(self):
+        guest = User.objects.create_user(email="guest@test.az", fullname="Guest", password="StrongPass1!")
+        self.assertNotIn(guest, self.space.members.all())
+
+        r = self.c.post("/auth/api/login/", {"email": "guest@test.az", "password": "StrongPass1!"}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn("access", r.json())
+        self.assertIn(guest, self.space.members.all())
+        self.invite.refresh_from_db()
+        self.assertTrue(self.invite.acceptance)
+
+        # login-dən sonra space siyahısında görünür
+        c = APIClient(); c.credentials(HTTP_AUTHORIZATION="Bearer " + r.json()["access"])
+        self.assertIn(self.space.id, [s["id"] for s in c.get("/space/api/").json()])
+
+    def test_wrong_password_does_not_accept(self):
+        User.objects.create_user(email="guest@test.az", fullname="Guest", password="StrongPass1!")
+        r = self.c.post("/auth/api/login/", {"email": "guest@test.az", "password": "wrong"}, format="json")
+        self.assertEqual(r.status_code, 401)
+        self.invite.refresh_from_db()
+        self.assertFalse(self.invite.acceptance)

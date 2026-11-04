@@ -72,10 +72,19 @@ class SquadChatConsumer(AsyncWebsocketConsumer):
             return
 
         self.squad_id = int(self.scope["url_route"]["kwargs"]["squad_id"])
+        if not await self._can_access():
+            # Bu squad-a girişi yoxdur (nə space yaradanı/üzvü, nə squad üzvü)
+            await self.close(code=4003)
+            return
         self.group_name = f"squad_{self.squad_id}"
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
+
+    @database_sync_to_async
+    def _can_access(self):
+        from app.access import accessible_squads
+        return accessible_squads(self.user).filter(pk=self.squad_id).exists()
 
     async def disconnect(self, code):
         if hasattr(self, "group_name"):

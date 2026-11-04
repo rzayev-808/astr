@@ -25,7 +25,10 @@ class TicketCreateViewset(viewsets.ModelViewSet):
     serializer_class = TicketCreateEditSerializers
     
     def get_queryset(self):
-        return Ticket.objects.all()
+        # Redaktə/silmə yalnız öz ticket-ləri üçün
+        if getattr(self, 'swagger_fake_view', False) or not self.request.user.is_authenticated:
+            return Ticket.objects.none()
+        return Ticket.objects.filter(user=self.request.user)
 
 
 class AnsweCreateViewset(viewsets.ModelViewSet):

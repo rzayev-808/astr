@@ -38,3 +38,21 @@ def accept_invite(invite, user):
     if invite.space:
         invite.space.members.add(user)
     return invite
+
+
+def pending_invites_for(user):
+    from .models import Invite
+    return Invite.objects.filter(email__iexact=user.email.strip(), acceptance=False).select_related("space")
+
+
+def accept_pending_invites_for(user):
+    """İstifadəçinin email-inə gələn, hələ qəbul olunmamış bütün dəvətləri qəbul edir.
+
+    Qeydiyyatdan və login-dən sonra çağırılır — front-end-də ayrıca "qəbul et" düyməsi olmasa da
+    adam space-ə düşür. Qəbul olunan dəvətlərin siyahısını qaytarır.
+    """
+    accepted = []
+    for invite in pending_invites_for(user):
+        accept_invite(invite, user)
+        accepted.append(invite)
+    return accepted

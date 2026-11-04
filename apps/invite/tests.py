@@ -17,7 +17,9 @@ class BrokenEmailBackend(BaseEmailBackend):
         raise ConnectionError("smtp down")
 
 
-@override_settings(INVITE_LINK="https://app.test/invite/{id}", SITE_NAME="Comestask")
+@override_settings(INVITE_LINK_NEW_USER="https://app.test/signup?invite={token}",
+                   INVITE_LINK_EXISTING_USER="https://app.test/logout?invite={token}",
+                   SITE_NAME="Comestask")
 class InviteEmailTests(TestCase):
     def setUp(self):
         Pricing.objects.create(name="Free")
@@ -38,13 +40,14 @@ class InviteEmailTests(TestCase):
         m = mail.outbox[0]
         self.assertEqual(m.to, ["new@test.az"])
         self.assertEqual(m.subject, f"Owner Adam invited you to {self.space.space_name}")
-        self.assertIn(f"https://app.test/invite/{inv_id}", m.body)
+        token = Invite.objects.get(pk=inv_id).token
+        self.assertIn(f"https://app.test/signup?invite={token}", m.body)   # hesab yoxdur → qeydiyyat
         self.assertIn(self.space.space_name, m.body)
         self.assertIn("dev", m.body)
 
         html, mimetype = m.alternatives[0]
         self.assertEqual(mimetype, "text/html")
-        self.assertIn(f"https://app.test/invite/{inv_id}", html)
+        self.assertIn(f"https://app.test/signup?invite={token}", html)
         self.assertIn("Owner Adam", html)
 
     def test_invite_without_space_uses_site_name(self):
@@ -87,9 +90,14 @@ class InviteTokenFlowTests(TestCase):
         r = c.get("/invite/api/")
         self.assertTrue(all("token" not in row for row in r.json()))
 
-    @override_settings(INVITE_LINK="https://app.test/invite/{token}")
-    def test_email_link_uses_token(self):
-        self.assertEqual(build_invite_link(self.invite), f"https://app.test/invite/{self.invite.token}")
+    @override_settings(INVITE_LINK_NEW_USER="https://app.test/signup?invite={token}",
+                       INVITE_LINK_EXISTING_USER="https://app.test/logout?invite={token}")
+    def test_email_link_depends_on_account_existence(self):
+        # hesab yoxdur → qeydiyyat səhifəsi
+        self.assertEqual(build_invite_link(self.invite), f"https://app.test/signup?invite={self.invite.token}")
+        # hesab var → login səhifəsi
+        User.objects.create(email="Guest@Test.az", fullname="Guest")
+        self.assertEqual(build_invite_link(self.invite), f"https://app.test/logout?invite={self.invite.token}")
         send_invite_email(self.invite)
         self.assertIn(self.invite.token, mail.outbox[0].body)
 

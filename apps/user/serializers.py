@@ -3,7 +3,8 @@ from .models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from invite.models import Invite
-from invite.services import accept_invite
+from invite.services import accept_invite, accept_pending_invites_for
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from rest_framework import serializers
 
@@ -58,14 +59,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
 
+        # Linkdəki kodla gələn dəvət + bu email-ə gələn digər gözləyən dəvətlər avtomatik qəbul olunur
         if self._invite is not None:
             accept_invite(self._invite, user)
+        self._accepted = accept_pending_invites_for(user)
 
         return user
 
     def get_space(self, user):
+        """Qeydiyyatla birlikdə qəbul olunan dəvətin space id-si (front-end adamı ora apara bilər)."""
         invite = getattr(self, '_invite', None)
-        return invite.space_id if invite is not None else None
+        if invite is not None:
+            return invite.space_id
+        accepted = getattr(self, '_accepted', None) or []
+        return accepted[0].space_id if accepted else None
         
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -80,3 +87,11 @@ class UserGetAndDetailSerializers(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ['password','is_admin','last_login','is_active']
+
+class LoginSerializer(TokenObtainPairSerializer):
+    """Adi JWT login + login olan kimi bu email-ə gələn gözləyən dəvətlər qəbul olunur."""
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        accept_pending_invites_for(self.user)
+        return data

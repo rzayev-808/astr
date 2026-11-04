@@ -13,6 +13,7 @@ from .serializers import DirectMessageSerializer, SquadMessageSerializer
 from .broadcast import broadcast_direct, broadcast_squad
 from user.models import User
 from squads.models import Squad
+from app.access import accessible_squads
 
 # Mesaj göndərmə üçün form sahələri (mətn və/və ya fayl).
 # IN_FORM + TYPE_FILE Swagger-də fayl seçici (multipart/form-data) göstərir.
@@ -101,7 +102,11 @@ class SquadMessageView(mixins.ListModelMixin, mixins.CreateModelMixin, GenericAP
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return SquadMessage.objects.filter(squad_id=self.kwargs["squad_id"])
+        # Yalnız girişi olan squad-ın mesajları (space yaradanı/üzvü və ya squad üzvü)
+        return SquadMessage.objects.filter(
+            squad_id=self.kwargs["squad_id"],
+            squad__in=accessible_squads(self.request.user),
+        )
 
     @swagger_auto_schema(
         operation_summary="Squad umumi chat — mesajları gətir",
@@ -126,7 +131,7 @@ class SquadMessageView(mixins.ListModelMixin, mixins.CreateModelMixin, GenericAP
         return self.create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        squad = get_object_or_404(Squad, pk=self.kwargs["squad_id"])
+        squad = get_object_or_404(accessible_squads(self.request.user), pk=self.kwargs["squad_id"])
         obj = serializer.save(sender=self.request.user, squad=squad)
         data = SquadMessageSerializer(obj, context={"request": self.request}).data
         broadcast_squad(data, squad.id)

@@ -9,7 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 def build_invite_link(invite):
-    return settings.INVITE_LINK.format(token=invite.token, id=invite.pk)
+    """Hesab varsa login səhifəsinə, yoxdursa qeydiyyata aparan link (bax: settings.INVITE_LINK_*)."""
+    from user.models import User
+    exists = User.objects.filter(email__iexact=invite.email.strip()).exists()
+    template = settings.INVITE_LINK_EXISTING_USER if exists else settings.INVITE_LINK_NEW_USER
+    return template.format(token=invite.token, id=invite.pk)
 
 
 def send_invite_email(invite):

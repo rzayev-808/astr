@@ -142,6 +142,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    # Default: hər ünvana login lazımdır. Açıq olmalı olanlar (qeydiyyat, şifrə sıfırlama,
+    # dəvət linki, swagger) öz view-unda permission_classes = [AllowAny] ilə açılır.
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
     
 }   
@@ -212,9 +215,15 @@ SITE_NAME = "Comestask"
 
 # Məktubdakı linklər front-end-ə aparır. Front-end-in real ünvanını bura yaz.
 FRONTEND_URL = "https://comestask.az"
-# {token} → dəvətin gizli kodu. Front-end bu səhifədə əvvəl GET /invite/api/by-token/<token>/ ilə
-# məlumatı alır, sonra (login-dən/qeydiyyatdan sonra) POST /invite/api/by-token/<token>/accept/ çağırır
-INVITE_LINK = FRONTEND_URL + "/invite/{token}"
+# Dəvət məktubundakı link. Backend özü seçir:
+#   dəvət olunan email ilə hesab VARSA  → INVITE_LINK_EXISTING_USER (login səhifəsi)
+#   hesab YOXDURSA                      → INVITE_LINK_NEW_USER (qeydiyyat səhifəsi)
+# Qeydiyyatdan və ya login-dən sonra həmin email-ə gələn dəvətlər avtomatik qəbul olunur,
+# adam space-in üzvü olur və space siyahısında görür. Front-end-də heç nə dəyişmir.
+# {token} → dəvətin gizli kodu; front-end gələcəkdə ayrıca dəvət səhifəsi etsə,
+# GET /invite/api/by-token/<token>/ və POST /invite/api/by-token/<token>/accept/ ilə işlədə bilər.
+INVITE_LINK_EXISTING_USER = FRONTEND_URL + "/logout?invite={token}"
+INVITE_LINK_NEW_USER = FRONTEND_URL + "/signup?invite={token}"
 # {token} → sıfırlama kodu; front-end bu səhifədə POST /auth/api/reset_password/<token>/ çağırır
 PASSWORD_RESET_LINK = FRONTEND_URL + "/reset-password/{token}"
 

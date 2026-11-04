@@ -8,6 +8,7 @@ from rest_framework import status
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .models import PasswordReset
 from .emails import send_password_reset_email
+from invite.services import accept_pending_invites_for
 from rest_framework import mixins
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -95,6 +96,8 @@ class GetUserVirews(mixins.ListModelMixin, mixins.CreateModelMixin,mixins.Update
         return User.objects.filter(id=self.request.user.id)
 
     def get(self, request, *args, **kwargs):
+        # Profil yüklənəndə də gözləyən dəvətlər qəbul olunsun (bax: space/views.py)
+        accept_pending_invites_for(request.user)
         return self.list(request, *args, **kwargs)
     
 

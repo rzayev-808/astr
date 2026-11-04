@@ -2,8 +2,9 @@
 
     space   → yaradan və ya üzv
     cluster → space-ə girişi olan (space səviyyəsindədir)
-    squad   → space-i YARADAN və ya squad-ın ÜZVÜ
-              (adi space üzvü olmaq kifayət deyil: adam yalnız öz squad-larını görür)
+    squad   → space-ə girişi olan (yaradan və ya üzv) və ya squad-ın üzvü
+              (başqa space-lərin squad-ları görünmür; dəvətlə gələn adam öz space-inin
+               bütün squad-larında işləyə bilir)
     task    → squad-a girişi olan və ya task üzvü
 
 `*_q(user, prefix)` Q-filtr qaytarır; prefix ilə əlaqəli modeldən də istifadə olunur,
@@ -22,7 +23,7 @@ def space_q(user, prefix=""):
 
 
 def squad_q(user, prefix=""):
-    return Q(**{f"{prefix}space__creater_user": user}) | Q(**{f"{prefix}squad_members": user})
+    return space_q(user, f"{prefix}space__") | Q(**{f"{prefix}squad_members": user})
 
 
 def task_q(user, prefix=""):

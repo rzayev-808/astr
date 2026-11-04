@@ -4,6 +4,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from pricing.models import Pricing
+from space.models import Space
 from user.emails import build_password_reset_link
 from user.models import PasswordReset, User
 
@@ -134,7 +135,6 @@ class AutoAcceptInviteTests(TestCase):
 
     def setUp(self):
         from invite.models import Invite
-        from space.models import Space
         Pricing.objects.create(name="Free")
         self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
         self.space = Space.objects.filter(creater_user=self.owner).first()
@@ -174,3 +174,24 @@ class AutoAcceptInviteTests(TestCase):
         self.assertEqual(r.status_code, 401)
         self.invite.refresh_from_db()
         self.assertFalse(self.invite.acceptance)
+
+    def test_already_logged_in_user_gets_invite_on_dashboard_load(self):
+        """Adam artıq login idi (login hadisəsi yoxdur): space siyahısı / profil açılanda qəbul olunur."""
+        guest = User.objects.create(email="guest@test.az", fullname="Guest")
+        c = APIClient(); c.force_authenticate(user=guest)
+
+        r = c.get("/space/api/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(self.space.id, [s["id"] for s in r.json()])
+        self.assertIn(guest, self.space.members.all())
+        self.invite.refresh_from_db()
+        self.assertTrue(self.invite.acceptance)
+        # üzv siyahısında görünür
+        detail = c.get(f"/space/api/{self.space.id}/").json()
+        self.assertIn(guest.id, [m["id"] for m in detail["members"]])
+
+    def test_profile_load_also_accepts(self):
+        guest = User.objects.create(email="guest@test.az", fullname="Guest")
+        c = APIClient(); c.force_authenticate(user=guest)
+        self.assertEqual(c.get("/auth/api/user/").status_code, 200)
+        self.assertIn(guest, self.space.members.all())

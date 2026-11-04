@@ -39,15 +39,15 @@ class SquadChatAccessTests(TestCase):
         self.assertEqual(c.post(self.url, {"text": "hey"}).status_code, 201)
         self.assertEqual(SquadMessage.objects.filter(squad=self.squad).count(), 2)
 
-    def test_outsiders_cannot_read_or_post(self):
-        for u in (self.stranger, self.space_member):
-            c = client_for(u)
-            self.assertEqual(c.get(self.url).json(), [], u.email)
-            self.assertEqual(c.post(self.url, {"text": "hey"}).status_code, 404, u.email)
+    def test_stranger_cannot_read_or_post(self):
+        c = client_for(self.stranger)
+        self.assertEqual(c.get(self.url).json(), [])
+        self.assertEqual(c.post(self.url, {"text": "hey"}).status_code, 404)
         self.assertEqual(SquadMessage.objects.filter(squad=self.squad).count(), 1)
 
-    def test_owner_can_read(self):
-        self.assertEqual(len(client_for(self.owner).get(self.url).json()), 1)
+    def test_owner_and_space_member_can_read(self):
+        for u in (self.owner, self.space_member):
+            self.assertEqual(len(client_for(u).get(self.url).json()), 1, u.email)
 
     def test_anonymous_is_rejected(self):
         self.assertIn(APIClient().get(self.url).status_code, (401, 403))

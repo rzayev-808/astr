@@ -11,6 +11,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from invite.services import accept_pending_invites_for
 
 
 
@@ -31,6 +32,9 @@ class GetSpaceVirews(mixins.ListModelMixin, mixins.CreateModelMixin, GenericAPIV
         return Space.objects.filter(Q(creater_user=user) | Q(members=user)).distinct()
 
     def get(self, request, *args, **kwargs):
+        # Dashboard açılanda ilk çağırılan ünvan budur. Adam artıq login idisə, login hadisəsi
+        # olmur; ona görə bu email-ə gələn gözləyən dəvətlər burada da avtomatik qəbul olunur.
+        accept_pending_invites_for(request.user)
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):

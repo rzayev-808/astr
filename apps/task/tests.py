@@ -40,34 +40,32 @@ class TaskAccessTests(TestCase):
         self.assertIn(APIClient().delete(self.url).status_code, (401, 403))
         self.assertTrue(Task.objects.filter(pk=self.task.id).exists())
 
-    def test_owner_squad_member_and_task_member_can_see(self):
-        for u in (self.owner, self.squad_member, self.task_member):
+    def test_owner_space_member_squad_member_and_task_member_can_see(self):
+        for u in (self.owner, self.member, self.squad_member, self.task_member):
             self.assertEqual(client_for(u).get(self.url).status_code, 200, u.email)
             self.assertIn(self.task.id, [t["id"] for t in client_for(u).get("/task/api/").json()])
 
-    def test_space_member_outside_squad_and_stranger_cannot_see_or_delete(self):
-        # login olub, amma bu squad-da deyil → başqa squad-ın task-larını görmür
-        for u in (self.member, self.stranger):
-            c = client_for(u)
-            self.assertEqual(c.get(self.url).status_code, 404, u.email)
-            self.assertEqual(c.get("/task/api/").json(), [], u.email)
-            self.assertEqual(c.get(f"/task/api/?squad_id={self.squad.id}").json(), [], u.email)
-            self.assertEqual(c.delete(self.url).status_code, 404)
-            self.assertEqual(c.delete(f"/task/api/action/{self.task.id}").status_code, 404)
+    def test_stranger_cannot_see_or_delete(self):
+        # login olub, amma bu space-də deyil → başqa space-in squad task-larını görmür
+        c = client_for(self.stranger)
+        self.assertEqual(c.get(self.url).status_code, 404)
+        self.assertEqual(c.get("/task/api/").json(), [])
+        self.assertEqual(c.get(f"/task/api/?squad_id={self.squad.id}").json(), [])
+        self.assertEqual(c.delete(self.url).status_code, 404)
+        self.assertEqual(c.delete(f"/task/api/action/{self.task.id}").status_code, 404)
         self.assertTrue(Task.objects.filter(pk=self.task.id).exists())
 
-    def test_create_only_in_own_squad(self):
+    def test_create_only_in_accessible_squad(self):
         body = {"name": "New", "squad": self.squad.id, "deadline": "2030-01-01T10:00:00Z",
                 "project": self.project.id, "description": "d", "story_point": "1"}
-        for u in (self.stranger, self.member):
-            self.assertEqual(client_for(u).post("/task/api/create/", body, format="json").status_code, 403, u.email)
-        for u in (self.squad_member, self.owner):
+        self.assertEqual(client_for(self.stranger).post("/task/api/create/", body, format="json").status_code, 403)
+        # dəvətlə gələn space üzvü squad-da task yarada bilir
+        for u in (self.member, self.squad_member, self.owner):
             self.assertEqual(client_for(u).post("/task/api/create/", body, format="json").status_code, 201, u.email)
 
     def test_comment_only_on_accessible_task(self):
-        for u in (self.stranger, self.member):
-            body = {"user": u.id, "task": self.task.id, "comment": "hi"}
-            self.assertEqual(client_for(u).post("/task/api/add/comment/", body, format="json").status_code, 403, u.email)
-        body = {"user": self.squad_member.id, "task": self.task.id, "comment": "hi"}
-        self.assertEqual(client_for(self.squad_member).post("/task/api/add/comment/", body, format="json").status_code, 201)
+        body = {"user": self.stranger.id, "task": self.task.id, "comment": "hi"}
+        self.assertEqual(client_for(self.stranger).post("/task/api/add/comment/", body, format="json").status_code, 403)
+        body = {"user": self.member.id, "task": self.task.id, "comment": "hi"}
+        self.assertEqual(client_for(self.member).post("/task/api/add/comment/", body, format="json").status_code, 201)
         self.assertEqual(Comment.objects.filter(task=self.task).count(), 1)

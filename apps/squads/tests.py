@@ -32,19 +32,19 @@ class SquadAccessTests(TestCase):
         self.assertIn(APIClient().get(self.url).status_code, (401, 403))
         self.assertIn(APIClient().get("/squad/api/").status_code, (401, 403))
 
-    def test_owner_and_squad_member_can_see(self):
-        for u in (self.owner, self.squad_member):
+    def test_owner_space_member_and_squad_member_can_see(self):
+        # dəvətlə gələn adam (space üzvü) öz space-inin squad-larını görür
+        for u in (self.owner, self.member, self.squad_member):
             self.assertEqual(client_for(u).get(self.url).status_code, 200, u.email)
             self.assertIn(self.squad.id, [s["id"] for s in client_for(u).get("/squad/api/").json()])
 
-    def test_space_member_outside_squad_and_stranger_get_404(self):
-        # adi space üzvü yalnız öz squad-larını görür; bu squad-da deyil → görmür
-        for u in (self.member, self.stranger):
-            c = client_for(u)
-            self.assertEqual(c.get(self.url).status_code, 404, u.email)
-            self.assertEqual(c.get("/squad/api/").json(), [], u.email)
-            self.assertEqual(c.patch(self.url, {"name": "Hacked"}, format="json").status_code, 404)
-            self.assertEqual(c.delete(self.url).status_code, 404)
+    def test_stranger_gets_404_and_empty_list(self):
+        # başqa space-in squad-ı görünmür
+        c = client_for(self.stranger)
+        self.assertEqual(c.get(self.url).status_code, 404)
+        self.assertEqual(c.get("/squad/api/").json(), [])
+        self.assertEqual(c.patch(self.url, {"name": "Hacked"}, format="json").status_code, 404)
+        self.assertEqual(c.delete(self.url).status_code, 404)
         self.assertTrue(Squad.objects.filter(pk=self.squad.id, name="Alpha").exists())
 
     def test_create_only_in_accessible_space(self):

@@ -200,8 +200,7 @@ EMAIL_HOST = "smtp-relay.brevo.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "c166cf001@smtp-brevo.com"
-# Brevo-nun "SMTP key"-i (xsmtpsib-... ilə başlayan sətir) bura, dırnaqların arasına yazılır.
-EMAIL_HOST_PASSWORD = "xsmtpsib-2af5d5615891dc9b490c51191f3cebaad87899c02892fc1b12e02bf503221d91-YXUMqnJtVjkhkiWH"
+EMAIL_HOST_PASSWORD = ""  # bura YAZMAYIN — local_settings.py-a bax (faylın sonu)
 EMAIL_TIMEOUT = 20  # saniyə — SMTP cavab verməsə sorğu bundan çox gözləməsin
 
 # Məktubların "kimdən" ünvanı. Brevo-da təsdiqlənmiş sender olmalıdır, yoxsa Brevo rədd edir.
@@ -217,3 +216,21 @@ FRONTEND_URL = "http://comestask.az"
 INVITE_LINK = FRONTEND_URL + "/invite/{id}"
 # {token} → sıfırlama kodu; front-end bu səhifədə POST /auth/api/reset_password/<token>/ çağırır
 PASSWORD_RESET_LINK = FRONTEND_URL + "/reset-password/{token}"
+
+
+# ---------------------------------------------------------------------------
+# GİZLİ AÇARLAR — bu repo GitHub-da AÇIQDIR, ona görə şifrələr bu fayla yazılmır.
+# Serverdə bu faylın yanında local_settings.py adlı fayl yaradın (git ona baxmır,
+# .gitignore-dadır). İçində yalnız gizli sətirlər olur, nümunə: local_settings.example.py
+#     EMAIL_HOST_PASSWORD = "xsmtpsib-..."
+# Həmin fayl yoxdursa, start zamanı aşağıdakı xəbərdarlıq çıxır və məktublar getmir.
+# ---------------------------------------------------------------------------
+try:
+    from .local_settings import *  # noqa: F401,F403
+except ImportError:
+    import warnings
+    warnings.warn(
+        "app/local_settings.py tapılmadı: EMAIL_HOST_PASSWORD boşdur, e-poçt məktubları getməyəcək. "
+        "Nümunə: app/local_settings.example.py",
+        stacklevel=1,
+    )

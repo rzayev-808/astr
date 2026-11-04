@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_invite_link(invite):
-    return settings.INVITE_LINK.format(id=invite.pk)
+    return settings.INVITE_LINK.format(token=invite.token, id=invite.pk)
 
 
 def send_invite_email(invite):

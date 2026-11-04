@@ -63,3 +63,89 @@ class InviteEmailTests(TestCase):
         self.assertIn("warning", r.json())
         self.assertTrue(Invite.objects.filter(email="new@test.az").exists())
         self.assertEqual(len(mail.outbox), 0)
+
+
+class InviteTokenFlowTests(TestCase):
+    """Linkdəki kodla axın: məlumat (login-siz) → qəbul (login ilə)."""
+
+    def setUp(self):
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner Adam")
+        self.space = Space.objects.filter(creater_user=self.owner).first()
+        self.invite = Invite.objects.create(email="guest@test.az", role="dev",
+                                            space=self.space, invited_by=self.owner)
+        self.anon = APIClient()
+
+    def test_token_is_generated_unique_and_hidden_from_api(self):
+        other = Invite.objects.create(email="x@test.az", role="qa", space=self.space, invited_by=self.owner)
+        self.assertGreaterEqual(len(self.invite.token), 40)
+        self.assertNotEqual(self.invite.token, other.token)
+
+        c = APIClient(); c.force_authenticate(user=self.owner)
+        r = c.post("/invite/api/", {"email": "n@test.az", "role": "dev", "space": self.space.id}, format="json")
+        self.assertNotIn("token", r.json()["invite"])
+        r = c.get("/invite/api/")
+        self.assertTrue(all("token" not in row for row in r.json()))
+
+    @override_settings(INVITE_LINK="https://app.test/invite/{token}")
+    def test_email_link_uses_token(self):
+        self.assertEqual(build_invite_link(self.invite), f"https://app.test/invite/{self.invite.token}")
+        send_invite_email(self.invite)
+        self.assertIn(self.invite.token, mail.outbox[0].body)
+
+    def test_public_info_without_login_user_missing(self):
+        r = self.anon.get(f"/invite/api/by-token/{self.invite.token}/")
+        self.assertEqual(r.status_code, 200, r.content)
+        d = r.json()
+        self.assertEqual(d["email"], "guest@test.az")
+        self.assertEqual(d["space"], self.space.id)
+        self.assertEqual(d["space_name"], self.space.space_name)
+        self.assertEqual(d["invited_by_name"], "Owner Adam")
+        self.assertEqual(d["status"], "pending")
+        self.assertFalse(d["user_exists"])
+        self.assertFalse(d["is_current_user"])
+
+    def test_public_info_user_exists_and_is_current_user(self):
+        guest = User.objects.create(email="Guest@Test.az", fullname="Guest")
+        r = self.anon.get(f"/invite/api/by-token/{self.invite.token}/")
+        self.assertTrue(r.json()["user_exists"])
+        self.assertFalse(r.json()["is_current_user"])
+
+        c = APIClient(); c.force_authenticate(user=guest)
+        self.assertTrue(c.get(f"/invite/api/by-token/{self.invite.token}/").json()["is_current_user"])
+
+    def test_public_info_unknown_token_404(self):
+        self.assertEqual(self.anon.get("/invite/api/by-token/yoxdur/").status_code, 404)
+
+    def test_accept_by_token_requires_login_and_matching_email(self):
+        url = f"/invite/api/by-token/{self.invite.token}/accept/"
+        self.assertIn(self.anon.post(url).status_code, (401, 403))
+
+        stranger = User.objects.create(email="x@test.az", fullname="X")
+        c = APIClient(); c.force_authenticate(user=stranger)
+        self.assertEqual(c.post(url).status_code, 403)
+        self.assertNotIn(stranger, self.space.members.all())
+
+    def test_accept_by_token_adds_member_and_returns_space(self):
+        guest = User.objects.create(email="guest@test.az", fullname="Guest")
+        c = APIClient(); c.force_authenticate(user=guest)
+        r = c.post(f"/invite/api/by-token/{self.invite.token}/accept/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()["space"], self.space.id)
+        self.assertEqual(r.json()["invite"]["status"], "accepted")
+        self.assertIn(guest, self.space.members.all())
+
+        # ikinci dəfə olmaz
+        r = c.post(f"/invite/api/by-token/{self.invite.token}/accept/")
+        self.assertEqual(r.status_code, 400)
+
+        # qəbuldan sonra space siyahısında görünür
+        ids = [s["id"] for s in c.get("/space/api/").json()]
+        self.assertIn(self.space.id, ids)
+
+    def test_accept_by_id_still_works_and_returns_space(self):
+        guest = User.objects.create(email="guest@test.az", fullname="Guest")
+        c = APIClient(); c.force_authenticate(user=guest)
+        r = c.post(f"/invite/api/{self.invite.id}/accept/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()["space"], self.space.id)

@@ -72,3 +72,53 @@ class PasswordResetEmailTests(TestCase):
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("NewPass1!"))
         self.assertFalse(PasswordReset.objects.filter(token=token).exists())
+
+
+class RegisterWithInviteTests(TestCase):
+    """Dəvət linkindən qeydiyyat: hesab yaranır, dəvət qəbul olunur, adam space-ə düşür."""
+    URL = "/auth/api/register/"
+    BODY = {"email": "guest@test.az", "fullname": "Guest", "password": "StrongPass1!", "password2": "StrongPass1!"}
+
+    def setUp(self):
+        from invite.models import Invite
+        from space.models import Space
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
+        self.space = Space.objects.filter(creater_user=self.owner).first()
+        self.invite = Invite.objects.create(email="guest@test.az", role="dev",
+                                            space=self.space, invited_by=self.owner)
+        self.c = APIClient()
+
+    def test_register_without_token_still_works(self):
+        r = self.c.post(self.URL, self.BODY, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertIsNone(r.json()["space"])
+        self.assertTrue(User.objects.filter(email="guest@test.az").exists())
+
+    def test_register_with_token_accepts_invite_and_returns_space(self):
+        r = self.c.post(self.URL, {**self.BODY, "invite_token": self.invite.token}, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()["space"], self.space.id)
+        guest = User.objects.get(email="guest@test.az")
+        self.assertIn(guest, self.space.members.all())
+        self.invite.refresh_from_db()
+        self.assertTrue(self.invite.acceptance)
+
+        # girəndən sonra space siyahısında görür
+        c = APIClient(); c.force_authenticate(user=guest)
+        self.assertIn(self.space.id, [s["id"] for s in c.get("/space/api/").json()])
+
+    def test_register_with_token_but_different_email_rejected(self):
+        body = {**self.BODY, "email": "other@test.az", "invite_token": self.invite.token}
+        r = self.c.post(self.URL, body, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("invite_token", r.json())
+        self.assertFalse(User.objects.filter(email="other@test.az").exists())
+
+    def test_register_with_bad_or_used_token_rejected(self):
+        r = self.c.post(self.URL, {**self.BODY, "invite_token": "yoxdur"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.invite.acceptance = True; self.invite.save()
+        r = self.c.post(self.URL, {**self.BODY, "invite_token": self.invite.token}, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertFalse(User.objects.filter(email="guest@test.az").exists())

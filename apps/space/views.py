@@ -26,7 +26,9 @@ class GetSpaceVirews(mixins.ListModelMixin, mixins.CreateModelMixin, GenericAPIV
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Space.objects.none()
-        return Space.objects.filter(creater_user=self.request.user)
+        # Həm özünün yaratdığı, həm də dəvətlə üzv olduğu space-lər
+        user = self.request.user
+        return Space.objects.filter(Q(creater_user=user) | Q(members=user)).distinct()
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)

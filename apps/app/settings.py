@@ -212,8 +212,9 @@ SITE_NAME = "Comestask"
 
 # Məktubdakı linklər front-end-ə aparır. Front-end-in real ünvanını bura yaz.
 FRONTEND_URL = "http://comestask.az"
-# {id} → dəvətin id-si; front-end bu səhifədə POST /invite/api/<id>/accept/ çağırır
-INVITE_LINK = FRONTEND_URL + "/invite/{id}"
+# {token} → dəvətin gizli kodu. Front-end bu səhifədə əvvəl GET /invite/api/by-token/<token>/ ilə
+# məlumatı alır, sonra (login-dən/qeydiyyatdan sonra) POST /invite/api/by-token/<token>/accept/ çağırır
+INVITE_LINK = FRONTEND_URL + "/invite/{token}"
 # {token} → sıfırlama kodu; front-end bu səhifədə POST /auth/api/reset_password/<token>/ çağırır
 PASSWORD_RESET_LINK = FRONTEND_URL + "/reset-password/{token}"
 

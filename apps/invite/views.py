@@ -1,12 +1,13 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 from rest_framework.response import Response
-from .serializers import InviteSerializers, InviteListSerializers
+from .serializers import InviteSerializers, InviteListSerializers, InvitePublicSerializer
 from .models import Invite
+from .services import accept_invite, InviteAcceptError
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveDestroyAPIView
 from rest_framework import mixins, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from drf_yasg.utils import swagger_auto_schema
 from .emails import send_invite_email
 
@@ -32,7 +33,7 @@ class InviteView(mixins.ListModelMixin, GenericAPIView):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-    @swagger_auto_schema(operation_description="Dəvət göndər.")
+    @swagger_auto_schema(operation_description="Dəvət göndər. Dəvət olunana linkli məktub gedir; cavabda email_sent göstərir ki, məktub getdi ya yox.")
     def post(self, request, *args, **kwargs):
         serializers = InviteSerializers(data=request.data)
         if serializers.is_valid():
@@ -58,6 +59,19 @@ class InviteDetailView(RetrieveDestroyAPIView):
         ).distinct()
 
 
+def _accept_response(invite, user, serializer):
+    """Qəbul məntiqini çağırır, nəticəni HTTP cavabına çevirir (iki accept endpoint-i bunu paylaşır)."""
+    try:
+        accept_invite(invite, user)
+    except InviteAcceptError as exc:
+        return Response({"error": str(exc)}, status=exc.status)
+    return Response({
+        "success": "Invite accepted",
+        "space": invite.space_id,
+        "invite": serializer(invite).data,
+    })
+
+
 class AcceptInvite(GenericAPIView):
     serializer_class = InviteListSerializers
     permission_classes = [IsAuthenticated]
@@ -66,17 +80,46 @@ class AcceptInvite(GenericAPIView):
         return Invite.objects.all()
 
     @swagger_auto_schema(
-        operation_description="Dəvəti qəbul et (yalnız dəvət olunan email-in sahibi). Space varsa, user avtomatik space üzvü olur.",
+        operation_description="Dəvəti id ilə qəbul et (yalnız dəvət olunan email-in sahibi). Space varsa, user avtomatik space üzvü olur. Cavabda space id var.",
         request_body=None,
     )
     def post(self, request, pk):
         invite = get_object_or_404(Invite, pk=pk)
-        if invite.email.lower() != request.user.email.lower():
-            return Response({"error": "This invite was not sent to your email"}, status=status.HTTP_403_FORBIDDEN)
-        if invite.acceptance:
-            return Response({"error": "Invite already accepted"}, status=status.HTTP_400_BAD_REQUEST)
-        invite.acceptance = True
-        invite.save()
-        if invite.space:
-            invite.space.members.add(request.user)
-        return Response({"success": "Invite accepted", "invite": self.get_serializer(invite).data})
+        return _accept_response(invite, request.user, self.get_serializer_class())
+
+
+class InviteByTokenView(GenericAPIView):
+    """Məktubdakı linkin açdığı səhifə üçün. Login tələb etmir."""
+    serializer_class = InvitePublicSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Invite.objects.all()
+
+    @swagger_auto_schema(
+        operation_description=(
+            "Linkdəki kodla dəvət məlumatı (login lazım deyil): space, kim dəvət edib, email, status. "
+            "user_exists=false → front-end register səhifəsinə (email hazır), "
+            "user_exists=true → login səhifəsinə yönləndirir; "
+            "is_current_user=true → login olan adam elə dəvət olunandır, birbaşa accept çağırmaq olar."
+        ),
+    )
+    def get(self, request, token):
+        invite = get_object_or_404(Invite, token=token)
+        return Response(self.get_serializer(invite).data)
+
+
+class AcceptInviteByTokenView(GenericAPIView):
+    serializer_class = InvitePublicSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Invite.objects.all()
+
+    @swagger_auto_schema(
+        operation_description="Dəvəti linkdəki kodla qəbul et (login olan adamın email-i dəvətdəki ilə eyni olmalıdır). Cavabda space id var — front-end adamı həmin space-ə aparır.",
+        request_body=None,
+    )
+    def post(self, request, token):
+        invite = get_object_or_404(Invite, token=token)
+        return _accept_response(invite, request.user, self.get_serializer_class())

@@ -1,0 +1,11 @@
+{% autoescape off %}Hello,
+
+{{ inviter }} invited you to join {% if space_name %}the workspace "{{ space_name }}"{% else %}{{ site_name }}{% endif %} as {{ role }}.
+
+Accept the invitation here:
+{{ link }}
+
+This invitation was sent to {{ email }}. If you were not expecting it, you can ignore this email.
+
+— {{ site_name }}
+{% endautoescape %}

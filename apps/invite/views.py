@@ -8,6 +8,7 @@ from rest_framework.generics import GenericAPIView, RetrieveDestroyAPIView
 from rest_framework import mixins, status
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
+from .emails import send_invite_email
 
 # Create your views here.
 class InviteView(mixins.ListModelMixin, GenericAPIView):
@@ -35,8 +36,12 @@ class InviteView(mixins.ListModelMixin, GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializers = InviteSerializers(data=request.data)
         if serializers.is_valid():
-            serializers.save(invited_by=request.user)
-            return Response({"success": "Invite send to user", "invite": serializers.data})
+            invite = serializers.save(invited_by=request.user)
+            email_sent = send_invite_email(invite)
+            payload = {"success": "Invite send to user", "email_sent": email_sent, "invite": serializers.data}
+            if not email_sent:
+                payload["warning"] = "Invite saved, but the email could not be sent"
+            return Response(payload)
         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

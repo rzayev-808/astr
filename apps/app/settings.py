@@ -181,3 +181,39 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+# ---------------------------------------------------------------------------
+# E-POÇT (dəvət və şifrə sıfırlama məktubları) — Brevo SMTP
+# Bütün ayarlar burdadır; mühit dəyişəni (env) istifadə olunmur.
+#
+# Brevo panelində yoxlanmalı 3 yer:
+#   1) Settings → SMTP & API → SMTP        : login və şifrə (SMTP key) burdan götürülür
+#   2) Settings → Security → Authorized IPs: serverin IP-si siyahıda olmalıdır,
+#                                            yoxsa "525 Unauthorized IP address" xətası gəlir
+#   3) Senders & IP → Senders              : DEFAULT_FROM_EMAIL oradakı təsdiqlənmiş ünvan olmalıdır
+#
+# Yoxlamaq üçün:  python manage.py sendtestemail sizin@mail.az
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp-relay.brevo.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "c166cf001@smtp-brevo.com"
+# Brevo-nun "SMTP key"-i (xsmtpsib-... ilə başlayan sətir) bura, dırnaqların arasına yazılır.
+EMAIL_HOST_PASSWORD = ""
+EMAIL_TIMEOUT = 20  # saniyə — SMTP cavab verməsə sorğu bundan çox gözləməsin
+
+# Məktubların "kimdən" ünvanı. Brevo-da təsdiqlənmiş sender olmalıdır, yoxsa Brevo rədd edir.
+DEFAULT_FROM_EMAIL = "Comestask <rzayev592@gmail.com>"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Məktubların içində görünən məhsul adı
+SITE_NAME = "Comestask"
+
+# Məktubdakı linklər front-end-ə aparır. Front-end-in real ünvanını bura yaz.
+FRONTEND_URL = "http://localhost:3000"
+# {id} → dəvətin id-si; front-end bu səhifədə POST /invite/api/<id>/accept/ çağırır
+INVITE_LINK = FRONTEND_URL + "/invite/{id}"
+# {token} → sıfırlama kodu; front-end bu səhifədə POST /auth/api/reset_password/<token>/ çağırır
+PASSWORD_RESET_LINK = FRONTEND_URL + "/reset-password/{token}"

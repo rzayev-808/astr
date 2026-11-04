@@ -7,7 +7,7 @@ from .models import User #assuming you have a user model
 from rest_framework import status
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .models import PasswordReset
-import os
+from .emails import send_password_reset_email
 from rest_framework import mixins
 
 class RegisterView(generics.CreateAPIView):
@@ -24,19 +24,22 @@ class RequestPasswordReset(generics.GenericAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        email = request.data['email']
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
         user = User.objects.filter(email__iexact=email).first()
 
         if user:
             token_generator = PasswordResetTokenGenerator()
-            token = token_generator.make_token(user) 
-            reset = PasswordReset(email=email, token=token)
+            token = token_generator.make_token(user)
+            reset = PasswordReset(email=user.email, token=token)
             reset.save()
 
-            reset_url = f"{os.environ['PASSWORD_RESET_BASE_URL']}/{token}"
-
-            # Sending reset link via email (commented out for clarity)
-            # ... (email sending code)
+            # Link settings.PASSWORD_RESET_LINK-dən qurulur (bax: user/emails.py)
+            if not send_password_reset_email(user, token):
+                return Response(
+                    {'error': 'Email could not be sent. Please try again later.'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
 
             return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
         else:

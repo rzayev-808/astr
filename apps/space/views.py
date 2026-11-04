@@ -88,6 +88,8 @@ class SpaceMemberRemoveView(GenericAPIView):
     @swagger_auto_schema(operation_description="Space-dən bir üzvü çıxar (yalnız space yaradan).")
     def delete(self, request, pk, user_id):
         space = get_object_or_404(self.get_queryset(), pk=pk)
+        if user_id == space.creater_user_id:
+            return Response({"error": "Space creator cannot be removed"}, status=status.HTTP_400_BAD_REQUEST)
         member = space.members.filter(pk=user_id).first()
         if member is None:
             return Response({"error": "User is not a member of this space"}, status=status.HTTP_404_NOT_FOUND)

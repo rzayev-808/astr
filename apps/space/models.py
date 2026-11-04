@@ -33,3 +33,10 @@ def create_default_space(sender, instance, created, *args, **kwargs):
             creater_user_id=instance.id,
             pricing_plans_id = Pricing.objects.filter(name="Free").last().id
         )
+
+
+@receiver(post_save, sender=Space)
+def add_creator_as_member(sender, instance, created, *args, **kwargs):
+    """Space-i yaradan həmişə members siyahısında da olsun (front-end üzv seçimini bu siyahıdan edir)."""
+    if created and instance.creater_user_id:
+        instance.members.add(instance.creater_user_id)

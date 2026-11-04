@@ -40,3 +40,38 @@ class SpaceAnonymousTests(TestCase):
     def test_anonymous_is_rejected_everywhere(self):
         for url in ("/space/api/", "/space/api/1/", "/auth/api/user/", "/task/api/project/"):
             self.assertIn(APIClient().get(url).status_code, (401, 403), url)
+
+
+class CreatorIsMemberTests(TestCase):
+    """Space-i yaradan həmişə members siyahısındadır (default space və API ilə yaradılan)."""
+
+    def setUp(self):
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
+        self.c = APIClient(); self.c.force_authenticate(user=self.owner)
+
+    def test_default_space_has_creator_in_members(self):
+        space = Space.objects.get(creater_user=self.owner)
+        self.assertIn(self.owner, space.members.all())
+        row = next(s for s in self.c.get("/space/api/").json() if s["id"] == space.id)
+        self.assertIn(self.owner.id, [m["id"] for m in row["members"]])
+
+    def test_api_created_space_has_creator_in_members(self):
+        r = self.c.post("/space/api/", {"space_name": "Yeni"}, format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertIn(self.owner, Space.objects.get(pk=r.json()["id"]).members.all())
+
+    def test_creator_cannot_be_removed_from_members(self):
+        space = Space.objects.get(creater_user=self.owner)
+        r = self.c.delete(f"/space/api/{space.id}/members/{self.owner.id}/")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn(self.owner, space.members.all())
+
+    def test_invitee_and_creator_both_listed(self):
+        from invite.models import Invite
+        from invite.services import accept_invite
+        space = Space.objects.get(creater_user=self.owner)
+        guest = User.objects.create(email="guest@test.az", fullname="Guest")
+        accept_invite(Invite.objects.create(email="guest@test.az", role="dev", space=space, invited_by=self.owner), guest)
+        ids = {m.id for m in space.members.all()}
+        self.assertEqual(ids, {self.owner.id, guest.id})

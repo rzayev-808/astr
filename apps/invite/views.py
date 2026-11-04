@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 from rest_framework.response import Response
-from .serializers import InviteSerializers, InviteListSerializers, InvitePublicSerializer
+from .serializers import InviteSerializers, InviteListSerializers, InvitePublicSerializer, InviteIncomingSerializer
 from .models import Invite
 from .services import accept_invite, InviteAcceptError
 from rest_framework.views import APIView
@@ -44,6 +44,22 @@ class InviteView(mixins.ListModelMixin, GenericAPIView):
                 payload["warning"] = "Invite saved, but the email could not be sent"
             return Response(payload)
         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IncomingInviteView(mixins.ListModelMixin, GenericAPIView):
+    """Mənə gələn dəvətlər — login olan adamın email-inə göndərilənlər."""
+    serializer_class = InviteIncomingSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['acceptance', 'space']
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Invite.objects.none()
+        return Invite.objects.filter(email__iexact=self.request.user.email.strip()).order_by('-create_date')
+
+    @swagger_auto_schema(operation_description="Mənə gələn dəvətlər (email-imə göndərilənlər). ?acceptance=false ilə yalnız gözləyənlər. Qəbul: POST /invite/api/<id>/accept/.")
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class InviteDetailView(RetrieveDestroyAPIView):

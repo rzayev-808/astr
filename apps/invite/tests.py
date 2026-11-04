@@ -149,3 +149,36 @@ class InviteTokenFlowTests(TestCase):
         r = c.post(f"/invite/api/{self.invite.id}/accept/")
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(r.json()["space"], self.space.id)
+
+
+class IncomingInviteTests(TestCase):
+    """GET /invite/api/incoming/ — yalnız mənim email-imə gələn dəvətlər."""
+
+    def setUp(self):
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
+        self.space = Space.objects.filter(creater_user=self.owner).first()
+        self.me = User.objects.create(email="Me@Test.az", fullname="Me")
+        self.mine = Invite.objects.create(email="me@test.az", role="dev", space=self.space, invited_by=self.owner)
+        self.done = Invite.objects.create(email="me@test.az", role="qa", space=self.space,
+                                          invited_by=self.owner, acceptance=True)
+        Invite.objects.create(email="other@test.az", role="dev", space=self.space, invited_by=self.owner)
+        self.c = APIClient(); self.c.force_authenticate(user=self.me)
+
+    def test_lists_only_my_invites_without_token(self):
+        r = self.c.get("/invite/api/incoming/")
+        self.assertEqual(r.status_code, 200, r.content)
+        rows = r.json()
+        self.assertEqual({row["id"] for row in rows}, {self.mine.id, self.done.id})
+        self.assertTrue(all("token" not in row for row in rows))
+        row = next(x for x in rows if x["id"] == self.mine.id)
+        self.assertEqual(row["space_name"], self.space.space_name)
+        self.assertEqual(row["invited_by_name"], "Owner")
+        self.assertEqual(row["status"], "pending")
+
+    def test_filter_pending_only(self):
+        rows = self.c.get("/invite/api/incoming/?acceptance=false").json()
+        self.assertEqual([row["id"] for row in rows], [self.mine.id])
+
+    def test_requires_login(self):
+        self.assertIn(APIClient().get("/invite/api/incoming/").status_code, (401, 403))

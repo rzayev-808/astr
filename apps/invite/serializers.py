@@ -18,22 +18,29 @@ class InviteListSerializers(serializers.ModelSerializer):
         exclude = ['token']
 
 
-class InvitePublicSerializer(serializers.ModelSerializer):
+class InviteIncomingSerializer(serializers.ModelSerializer):
+    """Mənə gələn dəvətlər (GET /invite/api/incoming/). Token göstərilmir; qəbul id ilə olur."""
+    space_name = serializers.CharField(source='space.space_name', read_only=True, default=None)
+    invited_by_name = serializers.CharField(source='invited_by.fullname', read_only=True, default=None)
+    status = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Invite
+        fields = ['id', 'email', 'role', 'space', 'space_name', 'invited_by_name',
+                  'status', 'create_date']
+
+
+class InvitePublicSerializer(InviteIncomingSerializer):
     """Linkdəki kodla açılan səhifə üçün — login tələb etmir.
 
     user_exists: dəvət olunan email ilə hesab var ya yox (front-end register/login seçir).
     is_current_user: sorğunu göndərən login olub və email-i dəvətdəki ilə eynidir.
     """
-    space_name = serializers.CharField(source='space.space_name', read_only=True, default=None)
-    invited_by_name = serializers.CharField(source='invited_by.fullname', read_only=True, default=None)
-    status = serializers.CharField(read_only=True)
     user_exists = serializers.SerializerMethodField()
     is_current_user = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Invite
-        fields = ['id', 'email', 'role', 'space', 'space_name', 'invited_by_name',
-                  'status', 'create_date', 'user_exists', 'is_current_user']
+    class Meta(InviteIncomingSerializer.Meta):
+        fields = InviteIncomingSerializer.Meta.fields + ['user_exists', 'is_current_user']
 
     def get_user_exists(self, invite):
         return User.objects.filter(email__iexact=invite.email.strip()).exists()

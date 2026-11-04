@@ -201,18 +201,18 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "c166cf001@smtp-brevo.com"
 # Brevo-nun "SMTP key"-i (xsmtpsib-... ilə başlayan sətir) bura, dırnaqların arasına yazılır.
-EMAIL_HOST_PASSWORD = ""
+EMAIL_HOST_PASSWORD = "xsmtpsib-2af5d5615891dc9b490c51191f3cebaad87899c02892fc1b12e02bf503221d91-YXUMqnJtVjkhkiWH"
 EMAIL_TIMEOUT = 20  # saniyə — SMTP cavab verməsə sorğu bundan çox gözləməsin
 
 # Məktubların "kimdən" ünvanı. Brevo-da təsdiqlənmiş sender olmalıdır, yoxsa Brevo rədd edir.
-DEFAULT_FROM_EMAIL = "Comestask <rzayev592@gmail.com>"
+DEFAULT_FROM_EMAIL = "Comestask <info@comestask.az>"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # Məktubların içində görünən məhsul adı
 SITE_NAME = "Comestask"
 
 # Məktubdakı linklər front-end-ə aparır. Front-end-in real ünvanını bura yaz.
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = "http://comestask.az"
 # {id} → dəvətin id-si; front-end bu səhifədə POST /invite/api/<id>/accept/ çağırır
 INVITE_LINK = FRONTEND_URL + "/invite/{id}"
 # {token} → sıfırlama kodu; front-end bu səhifədə POST /auth/api/reset_password/<token>/ çağırır

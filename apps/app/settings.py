@@ -97,11 +97,16 @@ ASGI_APPLICATION = 'app.asgi.application'
 # Ünvanı REDIS_URL mühit dəyişəni ilə dəyişmək olar, məs:
 #   REDIS_URL=redis://:parol@127.0.0.1:6379/0
 REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
+# Redis-dən cavabı gözləmə həddi (saniyə). Canlı chat yeni mesajı Redis-də 5 saniyəlik
+# hissələrlə gözləyir. Redis kitabxanasının yeni versiyalarında standart hədd də 5 saniyədir:
+# ikisi toqquşur və boş qalan WebSocket bağlantısı 5-15 saniyəyə qırılır.
+# Ona görə hədd burada açıq yazılır və 5-dən böyük olmalıdır.
+REDIS_SOCKET_TIMEOUT = 30
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
+            "hosts": [{"address": REDIS_URL, "socket_timeout": REDIS_SOCKET_TIMEOUT}],
         },
     }
 }

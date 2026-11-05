@@ -1,5 +1,6 @@
 from channels.layers import InMemoryChannelLayer
-from django.test import TestCase, override_settings
+from django.conf import settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from chat.models import DirectMessage, SquadMessage
@@ -87,3 +88,15 @@ class ChatWithoutLiveDeliveryTests(TestCase):
             r = client_for(self.owner).post(f"/chat/api/direct/{self.other.id}/", {"text": "salam"})
         self.assertEqual(r.status_code, 201, r.content)
         self.assertEqual(DirectMessage.objects.filter(sender=self.owner, receiver=self.other).count(), 1)
+
+
+
+class LiveChatSettingsTests(SimpleTestCase):
+    """Redis-dən cavab gözləmə həddi chat-ın mesaj gözləmə müddətindən böyük olmalıdır.
+    Bərabər olanda boş qalan WebSocket bağlantısı bir neçə saniyəyə qırılır."""
+
+    def test_redis_read_timeout_is_longer_than_message_wait(self):
+        from channels_redis.core import RedisChannelLayer
+
+        host = settings.CHANNEL_LAYERS["default"]["CONFIG"]["hosts"][0]
+        self.assertGreater(host["socket_timeout"], RedisChannelLayer.brpop_timeout)

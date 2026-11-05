@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 import datetime
+
+from app.dbfile import carry_over_old_database
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -108,10 +110,18 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# Baza faylı kod qovluğundan (apps/) bir pillə yuxarıdadır: <layihə>/db.sqlite3
+# (manage.py-ın yanında yox, ondan bir qovluq arxada). Serverdə: /root/astr/db.sqlite3
+#
+# Köhnə yerdə (apps/db.sqlite3) baza varsa və yeni yerdə hələ yoxdursa, ilk işə
+# salınmada onun surəti yeni yerə köçürülür. Köhnə fayl ehtiyat kimi yerində qalır.
+DB_FILE = BASE_DIR.parent / 'db.sqlite3'
+carry_over_old_database(old_path=BASE_DIR / 'db.sqlite3', new_path=DB_FILE)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_FILE,
     }
 }
 
@@ -176,7 +186,13 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-MEDIA_URL = '/media/'
+# Fayl linkləri (profil şəkli, chat və task faylları) tam ünvanla qayıdır.
+# Backend saytda "/v1" altında işləyir, ona görə link belə olmalıdır:
+#   https://comestask.az/v1/media/user_photo/sekil.jpg
+# ("/media/..." front-end-ə düşür və şəkil açılmır.)
+# Lokalda sınayanda: BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "https://comestask.az/v1"
+MEDIA_URL = BACKEND_URL + '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
@@ -184,6 +200,26 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
+
+# ---------------------------------------------------------------------------
+# LOG — serverdə belə baxılır: journalctl -u comestask-api -n 200 --no-pager
+# DEBUG = False olanda Django "500" xətasının səbəbini heç yerə yazmırdı.
+# İndi xətanın tam mətni (Traceback) log-a düşür.
+# ---------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+    },
+}
 
 
 # ---------------------------------------------------------------------------

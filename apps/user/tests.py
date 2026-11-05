@@ -195,3 +195,25 @@ class AutoAcceptInviteTests(TestCase):
         c = APIClient(); c.force_authenticate(user=guest)
         self.assertEqual(c.get("/auth/api/user/").status_code, 200)
         self.assertIn(guest, self.space.members.all())
+
+
+class FileLinkTests(TestCase):
+    """Fayl linkləri backend-in "/v1" ünvanı ilə qayıdır ("/media/..." front-end-ə düşür)."""
+
+    def setUp(self):
+        Pricing.objects.create(name="Free")
+        self.user = User.objects.create_user(email="foto@test.az", fullname="Foto", password="Pass1234!")
+        User.objects.filter(pk=self.user.pk).update(photo="user_photo/sekil.jpg")
+        self.c = APIClient()
+        self.c.force_authenticate(user=self.user)
+
+    @override_settings(MEDIA_URL="https://comestask.az/v1/media/")
+    def test_profile_photo_link_goes_through_backend_address(self):
+        r = self.c.get("/auth/api/user/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()[0]["photo"], "https://comestask.az/v1/media/user_photo/sekil.jpg")
+
+    def test_media_address_setting_points_to_backend(self):
+        from django.conf import settings
+        self.assertEqual(settings.MEDIA_URL, settings.BACKEND_URL + "/media/")
+        self.assertTrue(settings.BACKEND_URL.endswith("/v1"))

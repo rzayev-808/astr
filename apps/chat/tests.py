@@ -1,7 +1,8 @@
+from channels.layers import InMemoryChannelLayer
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from chat.models import SquadMessage
+from chat.models import DirectMessage, SquadMessage
 from pricing.models import Pricing
 from space.models import Space
 from squads.models import Squad
@@ -51,3 +52,38 @@ class SquadChatAccessTests(TestCase):
 
     def test_anonymous_is_rejected(self):
         self.assertIn(APIClient().get(self.url).status_code, (401, 403))
+
+
+class BrokenChannelLayer(InMemoryChannelLayer):
+    """Redis işləmir kimi davranan canlı yayım qatı — xəta halını test etmək üçün."""
+
+    async def group_send(self, group, message):
+        raise ConnectionError("redis down")
+
+
+BROKEN_LAYER = {"default": {"BACKEND": "chat.tests.BrokenChannelLayer"}}
+
+
+@override_settings(CHANNEL_LAYERS=BROKEN_LAYER)
+class ChatWithoutLiveDeliveryTests(TestCase):
+    """Canlı yayım (Redis) işləməsə də mesaj yazılır və sorğu 500 vermir."""
+
+    def setUp(self):
+        Pricing.objects.create(name="Free")
+        self.owner = User.objects.create(email="owner@test.az", fullname="Owner")
+        self.other = User.objects.create(email="other@test.az", fullname="Other")
+        self.space = Space.objects.filter(creater_user=self.owner).first()
+        self.squad = Squad.objects.create(name="Alpha", space=self.space)
+
+    def test_squad_message_is_saved_and_reason_is_logged(self):
+        with self.assertLogs("chat.broadcast", level="ERROR") as logs:
+            r = client_for(self.owner).post(f"/chat/api/squad/{self.squad.id}/", {"text": "salam"})
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(SquadMessage.objects.filter(squad=self.squad, text="salam").count(), 1)
+        self.assertIn("redis down", logs.output[0])
+
+    def test_direct_message_is_saved(self):
+        with self.assertLogs("chat.broadcast", level="ERROR"):
+            r = client_for(self.owner).post(f"/chat/api/direct/{self.other.id}/", {"text": "salam"})
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(DirectMessage.objects.filter(sender=self.owner, receiver=self.other).count(), 1)

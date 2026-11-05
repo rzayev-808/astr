@@ -1,2 +1,7 @@
 # Gizli açarlar — heç vaxt commit olunmur
 apps/app/local_settings.py
+
+# Canlı baza (apps/-dan bir qovluq yuxarıda) — heç vaxt commit olunmur
+/db.sqlite3
+/db.sqlite3-journal
+/db.sqlite3.*.tmp
